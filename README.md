@@ -29,6 +29,7 @@ A RESTful API service that allows users to upload text content. The system autom
 - **Language:** Python 3.9+
 - **Framework:** FastAPI
 - **Database:** PostgreSQL (user data), SQLAlchemy ORM
+- **Caching:** Redis
 - **AI Integration:** OpenAI GPT-3.5 / Gemini API
 - **Infrastructure:** Docker
 - **Authentication:** JWT (PyJWT & python-jose)
@@ -74,6 +75,11 @@ A RESTful API service that allows users to upload text content. The system autom
    JWT_EXP_MINUTES=60
    OPENAI_API_KEY=<your_openai_api_key>
    GEMINI_API_KEY=<your_gemini_api_key>
+   DATABASE_URL=<your_postgres_url>
+   REDIS_HOST=redis
+   REDIS_PORT=6379
+   REDIS_PASSWORD=<your password>
+   REDIS_CACHE_TTL=600
    ```
 
 5. Run database migrations (or create tables manually) to set up the **Users** and **Contents** tables.
@@ -86,19 +92,93 @@ A RESTful API service that allows users to upload text content. The system autom
 7. Access the **Swagger UI** for testing at: **http://127.0.0.1:8000/docs**
 
 
-### Docker Setup
+## Docker Setup
 
-1. Build the Docker image:
-   ```bash
-   docker build -t intelligent-content-api .
-   ```
+A simple, working `docker-compose.yml` is used so everything runs with one command.
 
-2. Run the container, mapping the port and injecting environment variables from your `.env` file:
-   ```bash
-   docker run -d -p 8000:8000 --env-file .env intelligent-content-api
-   ```
+### docker-compose.yml
 
-3. API available at http://127.0.0.1:8000
+```yaml
+version: '3.9'
+
+services:
+
+  # PostgreSQL
+  postgres-intelligent:
+    image: postgres:18
+    container_name: postgres_intelligent
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: admin
+      POSTGRES_DB: boot
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - contentdb_network
+
+  # Adminer
+  adminer:
+    image: adminer
+    container_name: contentdb_adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - contentdb_network
+
+  # Redis
+  redis:
+    image: redis:7
+    container_name: intelligent_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - contentdb_network
+
+  # FastAPI
+  fastapi-app:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://admin:admin@postgres-intelligent:5432/boot
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      - postgres-intelligent
+      - redis
+    networks:
+      - contentdb_network
+    volumes:
+      - ./app:/app/app
+
+# Networks
+networks:
+  contentdb_network:
+
+# Volumes
+volumes:
+  postgres_data:
+
+```
+
+### Run Everything
+
+To start the application and database, run:
+
+```bash
+docker compose up --build
+```
+
+The API will be available at:
+
+[http://localhost:8000](http://localhost:8000)
 
 ---
 
@@ -111,7 +191,6 @@ A RESTful API service that allows users to upload text content. The system autom
 | **GET**    | /contents         | Retrieve all content for the user    | `No body required`                                         |
 | **GET**    | /contents/{id}    | Retrieve content by ID               | `No body required`                                         |
 | **DELETE** | /contents/{id}    | Delete content by ID                 | `No body required`                                         |
-| **POST**   | /contents/analyze | Just analyze text without saving     | `{ "text": "Your text here" }`                             |
 
 ---
 
@@ -169,14 +248,52 @@ A RESTful API service that allows users to upload text content. The system autom
 * Logging: Terminal logging for requests, errors, and AI responses.
 * Error Handling: Graceful handling if AI API fails or times out.
 * Regex Password Validation: Strong password enforcement on signup.
-* Unit Testing: Pytest-based tests for signup and content endpoints (if added).
+* Redis caching for getting user contents.
 
-## How to Test
-1. Use Swagger UI: http://127.0.0.1:8000/docs
-2. Or Postman:
-   - Include JWT token in Authorization header for protected endpoints:
-   - Bearer <your_token_here>
-   - Send JSON body where required.
+## Swagger Usage (Documentation & Testing)
+
+Access the interactive docs at:
+http://127.0.0.1:8000/docs
+
+How to test endpoints
+- Open the docs page and find the endpoint you want to test.
+- Click "Try it out".
+- Enter the request body (JSON) or parameters and click "Execute".
+- Inspect the request/response panels for status, body, and example schemas.
+
+Using JWT for protected routes
+1. Obtain a token
+   - Call POST /users/login with JSON body, e.g.:
+   ```json
+   {
+     "email": "user@example.com",
+     "password": "Abcd@1234"
+   }
+   ```
+   - Successful response:
+   ```json
+   {
+     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+   }
+   ```
+
+2. Add token to Swagger
+   - Click the "Authorize" button (top right of the docs page).
+   - Enter the value: Bearer <your_token_here>
+   - Click "Authorize" then "Close".
+
+3. Call protected endpoints
+   - After authorizing, Swagger will include the Authorization header for secured endpoints.
+   - Example curl:
+   ```bash
+   curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6..." \
+     http://127.0.0.1:8000/contents
+   ```
+
+Notes
+- Include the "Bearer " prefix when pasting the token.
+- Tokens may expire based on JWT_EXP_MINUTES; re-authenticate if requests return 401.
+- For debugging, check the request/response panels in the Swagger UI for headers and error messages.
 
 ## Git Repo Structure
 
@@ -192,6 +309,8 @@ intelligent-content-api/
 │  ├─ service/
 │  |  ├─ analyze_sentiment.py # Logic for calling the AI API (Gemini/OpenAI)
 │  |  └─ auth_service.py      # Business logic for hashing, JWT creation, and validation
+│  ├─ caching/
+│  |  ├─ redis.py             # Redis connection for caching
 │  ├─ database/
 │  |  ├─ databse.py           # Database connection and session management
 │  |  ├─ models.py            # SQLAlchemy ORM models (Users, Contents)
@@ -202,6 +321,6 @@ intelligent-content-api/
 │      └─ test_conn.py        # Basic test for database/API connectivity
 ├─ .env                       # Environment configuration file
 ├─ requirements.txt           # Python dependency list
-├─ Dockerfile                 # Docker image definition
+├─ docker-compose.yml         # Docker image definition
 └─ README.md                  # Project documentation (this file)
 ```
