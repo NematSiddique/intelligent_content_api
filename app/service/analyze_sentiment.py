@@ -1,11 +1,22 @@
 import json
+from fastapi import HTTPException
 from google import genai
 from app.config import settings
+from google.genai import types
+from google.api_core import exceptions
 import logging
+
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = settings.GEMINI_API_KEY
-client = genai.Client()
+try:
+    # Set the timeout in milliseconds in the HttpOptions configuration
+    http_options = types.HttpOptions(timeout=10.0) # Timeout in seconds
+    client = genai.Client(api_key=GEMINI_API_KEY,http_options=http_options)
+except Exception as e:
+    logger.error(f"Could not initialize the genai client with HttpOptions: {e}")
+    # Fallback to a default client if HttpOptions fails (though it shouldn't if libs are correct)
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
 async def analyze_text(text: str):
     """
@@ -45,7 +56,18 @@ async def analyze_text(text: str):
         sentiment = data.get("sentiment", "Neutral")
         logger.info(f"Sentiment extracted: {sentiment}")
         return summary, sentiment
+    except exceptions.DeadlineExceeded:
+        logger.error("Gemini response timed out")
+        raise HTTPException(status_code=504, detail="The analysis request timed out. Please try again later.")
+
+    except exceptions.ResourceExhausted as e:
+        logger.error(f"Quota limit reached: {e}")
+        raise HTTPException(status_code=429, detail="Monthly quota exceeded. Please try again later.")
+
+    except exceptions.GoogleAPICallError as e:
+        logger.error(f"An unexpected Google API error occurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error communicating with AI service.")
 
     except Exception as e:
-        logger.error(f"Gemini error: {e}")
-        return "", "Neutral"
+        logger.error(f"Error analyzing text: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during text analysis")

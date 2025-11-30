@@ -1,20 +1,24 @@
-from fastapi import Depends, HTTPException
-from jose import JWTError
+from fastapi import Depends, HTTPException, Request, status
+from jose import ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
 import jwt
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from datetime import datetime, timedelta
 from app.config import settings
-from sqlalchemy.orm import Session
 import logging
 
 from app.database.database import get_db
 from app.database.models import User
 logger = logging.getLogger(__name__)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+bearer_scheme = HTTPBearer(description="Enter your JWT Bearer token")
+
+async def get_token_header(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    token = credentials.credentials
+    return token
 
 def hash_password(password: str):
     return pwd_context.hash(password)
@@ -28,8 +32,12 @@ def decode_access_token(token: str) -> dict:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGO])
         print("JWT secret at decode:", settings.JWT_SECRET)
         return payload
+    except ExpiredSignatureError as e:
+        # Re-raise the specific exception you want to catch in the middleware
+        raise ExpiredSignatureError("Token has expired") from e
     except JWTError as e:
-        raise e
+        # Re-raise the specific exception you want to catch in the middleware
+        raise JWTError("Invalid token") from e
     
 def create_token(data: dict):
     payload = data.copy()
@@ -40,21 +48,12 @@ def create_token(data: dict):
     print("JWT secret at encode:", settings.JWT_SECRET)
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGO)
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    try:
-        payload = decode_access_token(token)
-        user_id = payload.get("id")  # make sure your JWT contains this key
-        logger.debug(f"Decoded token payload: {payload}")
-        if not user_id:
-            logger.error("User ID not found in token payload")
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception as e:
-        logger.error(f"Token decoding error: {e}")
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    user = db.query(User).filter(User.id == user_id).first()
-    logger.debug(f"Fetched user from DB: {user}")
-    if not user:
-        logger.error("User not found in database")
-        raise HTTPException(status_code=404, detail="User not found")
+def get_current_user(request: Request) -> User:
+    if not hasattr(request.state, "user") or request.state.user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized: user not found in request",
+        )
+    
+    user = request.state.user
     return user

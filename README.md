@@ -106,7 +106,7 @@ A RESTful API service that allows users to upload text content. The system autom
 | Method     | Endpoint          | Description                          | Body Example                                               |
 | ---------- | ----------------- | ------------------------------------ | ---------------------------------------------------------- |
 | **POST**   | users/signup      | Register a new user                  | `{ "email": "user@example.com", "password": "Abcd@1234" }` |
-| **POST**   | users/signin      | Authenticate and return JWT token    | `{ "email": "user@example.com", "password": "Abcd@1234" }` |
+| **POST**   | users/login      | Authenticate and return JWT token    | `{ "email": "user@example.com", "password": "Abcd@1234" }` |
 | **POST**   | /contents         | Upload text, analyze, and save in DB | `{ "text": "Your text here" }`                             |
 | **GET**    | /contents         | Retrieve all content for the user    | `No body required`                                         |
 | **GET**    | /contents/{id}    | Retrieve content by ID               | `No body required`                                         |

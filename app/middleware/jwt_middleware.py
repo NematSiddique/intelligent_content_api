@@ -1,10 +1,15 @@
 from fastapi.responses import JSONResponse
-from fastapi import Request
+from fastapi import HTTPException, Request
 from jose import JWTError, ExpiredSignatureError
 from starlette.types import ASGIApp, Receive, Scope, Send
+from app.database.database import SessionLocal
+from app.database.models import User
 from app.service.user_service import decode_access_token
+import logging
+logger = logging.getLogger(__name__)
 
 class JWTMiddleware:
+  
   def __init__(self, app: ASGIApp):
     self.app = app
 
@@ -22,9 +27,9 @@ class JWTMiddleware:
 
     path = scope["path"]
     if path in [
-    "/users/signin",
-    "/users/signup",
-    "/openapi.json",
+    "/intelligent_content_api/v1/users/login",
+    "/intelligent_content_api/v1/users/signup",
+    "/intelligent_content_api/v1/openapi.json",
     "/docs",]:
       await self.app(scope, receive, send)
 
@@ -43,12 +48,32 @@ class JWTMiddleware:
 
     try:
       payload = decode_access_token(token)
-      request.state.user = payload
+      
+      user_id = payload.get("id")  
+
+      logger.debug(f"Decoded token payload: {payload}")
+      if not user_id:
+          logger.error("User ID not found in token payload")
+          raise HTTPException(status_code=401, detail="Invalid token")
+      db = SessionLocal() 
+      user = db.query(User).filter(User.id == user_id).first()
+      logger.debug(f"Fetched user from DB: {user}")
+      if not user:
+          logger.error("User not found in database")
+          raise HTTPException(status_code=404, detail="User not found")
+      request.state.user = user
     
+    except HTTPException as e:
+      response = JSONResponse(
+        status_code=e.status_code,
+        content={"detail": e.detail},
+      )
+      await response(scope, receive, send)
+      return
     except ExpiredSignatureError:
       response = JSONResponse(
         status_code=401,
-      content={"detail": "Token has expired"},
+        content={"detail": "Token has expired"},
       )
       await response(scope, receive, send)
       return

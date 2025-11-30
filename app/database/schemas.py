@@ -26,7 +26,7 @@ class ContentResponse(BaseModel):
     class Config:
         orm_mode = True
 
-class ContentResponse(BaseModel):
+class ContentListResponse(BaseModel):
     id: int
     text: str
     class Config:

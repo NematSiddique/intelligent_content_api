@@ -1,8 +1,8 @@
 import re
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
-from app.database.database import SessionLocal, get_db
+from app.database.database import get_db
 from app.database.models import User
 from app.database.schemas import UserCreate, UserLogin, UserResponse
 from app.service.user_service import create_token, hash_password, verify_password
@@ -40,7 +40,7 @@ def signup(data: UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
-@router.post("/signin")
+@router.post("/login")
 def signin(data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
 

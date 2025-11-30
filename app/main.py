@@ -11,7 +11,8 @@ setup_logging()
 app = FastAPI(
     title="Intelligent Content API",
     description="LLM-powered summary + sentiment service with JWT auth",
-    version="1.0.0"
+    version="1.0.0",
+    root_path="/intelligent_content_api/v1"
 )
 
 # CORS (feel free to restrict this)
@@ -27,7 +28,3 @@ app.add_middleware(JWTMiddleware)
 # Routers
 app.include_router(users_router.router, prefix="/users", tags=["Users"])
 app.include_router(contents_router.router, prefix="/contents", tags=["Contents"])
-
-@app.get("/")
-def root():
-    return {"message": "Intelligent Content API is running"}
