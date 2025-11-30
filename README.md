@@ -48,40 +48,40 @@ A RESTful API service that allows users to upload text content. The system autom
 ### Local Setup
 
 1. Clone the repository and navigate into the project directory:
-```bash
-git clone [https://github.com/NematSiddique/intelligent_content_api.git](https://github.com/NematSiddique/intelligent_content_api.git)
-cd intelligent_content_api
-```
+   ```bash
+   git clone [https://github.com/NematSiddique/intelligent_content_api.git](https://github.com/NematSiddique/intelligent_content_api.git)
+   cd intelligent_content_api
+   ```
 2. Create and activate a virtual environment:
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
-```
+   ```bash
+   python -m venv venv
+   # Windows
+   venv\Scripts\activate
+   # macOS/Linux
+   source venv/bin/activate
+   ```
 
 3. Install project dependencies:
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 4. Create a **`.env`** file in the project root and populate it with your configuration:
-```env
-DATABASE_URL=postgresql://<username>:<password>@localhost:5432/<dbname>
-JWT_SECRET=<your_jwt_secret>
-JWT_ALGO=HS256
-JWT_EXP_MINUTES=60
-OPENAI_API_KEY=<your_openai_api_key>
-GEMINI_API_KEY=<your_gemini_api_key>
-```
+   ```env
+   DATABASE_URL=postgresql://<username>:<password>@localhost:5432/<dbname>
+   JWT_SECRET=<your_jwt_secret>
+   JWT_ALGO=HS256
+   JWT_EXP_MINUTES=60
+   OPENAI_API_KEY=<your_openai_api_key>
+   GEMINI_API_KEY=<your_gemini_api_key>
+   ```
 
 5. Run database migrations (or create tables manually) to set up the **Users** and **Contents** tables.
 
 6. Start the FastAPI server (often using uvicorn):
-```bash
-uvicorn app.main:app --reload
-```
+   ```bash
+   uvicorn app.main:app --reload
+   ```
 
 7. Access the **Swagger UI** for testing at: **http://127.0.0.1:8000/docs**
 
@@ -89,14 +89,14 @@ uvicorn app.main:app --reload
 ### Docker Setup
 
 1. Build the Docker image:
-```bash
-docker build -t intelligent-content-api .
-```
+   ```bash
+   docker build -t intelligent-content-api .
+   ```
 
 2. Run the container, mapping the port and injecting environment variables from your `.env` file:
-```bash
-docker run -d -p 8000:8000 --env-file .env intelligent-content-api
-```
+   ```bash
+   docker run -d -p 8000:8000 --env-file .env intelligent-content-api
+   ```
 
 3. API available at http://127.0.0.1:8000
 
@@ -118,17 +118,17 @@ docker run -d -p 8000:8000 --env-file .env intelligent-content-api
 ## Database Design
 
 ### Users Table:
-- id – Primary Key
-- email – Unique
-- password – Hashed password
-- created_at – Timestamp
+- `id` – Primary Key
+- `email` – Unique
+- `password` – Hashed password
+- `created_at` – Timestamp
 ### Contents Table:
-- id – Primary Key
-- user_id – Foreign Key to Users
-- text – Original text
-- summary – AI-generated summary
-- sentiment – Positive/Negative/Neutral
-- created_at – Timestamp
+- `id` – Primary Key
+- `user_id` – Foreign Key to Users
+- `text` – Original text
+- `summary` – AI-generated summary
+- `sentiment` – Positive/Negative/Neutral
+- `created_at` – Timestamp
 
 ---
 
@@ -139,13 +139,13 @@ docker run -d -p 8000:8000 --env-file .env intelligent-content-api
 * Response stored in summary and sentiment fields in the database.
 
 **Example AI Output:**
-```json
-{
-    "summary": "This article explains FastAPI basics and content API features.",
-    "sentiment": "Positive"
-}
-
-```
+   ```json
+   {
+       "summary": "This article explains FastAPI basics and content API features.",
+       "sentiment": "Positive"
+   }
+   
+   ```
 
 ### GCP Deployment Architecture (Theoretical)
           +-------------------+
@@ -179,6 +179,8 @@ docker run -d -p 8000:8000 --env-file .env intelligent-content-api
   - Send JSON body where required.
 
 ### Git Repo Structure
+
+```
 intelligent-content-api/
 ├─ app/
 │  ├─ main.py                 # Main FastAPI application and startup logic
@@ -202,3 +204,4 @@ intelligent-content-api/
 ├─ requirements.txt           # Python dependency list
 ├─ Dockerfile                 # Docker image definition
 └─ README.md                  # Project documentation (this file)
+```
