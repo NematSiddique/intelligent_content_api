@@ -1,0 +1,27 @@
+services:
+
+  postgres-intelligent:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+        POSTGRES_PASSWORD: admin
+        POSTGRES_USER: admin
+        POSTGRES_DB: boot
+
+
+
+  adminer:
+    image: adminer
+    container_name: contentdb_adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - contentdb_network
+
+networks:
+  contentdb_network:
+
+volumes:
+  postgres_data:
