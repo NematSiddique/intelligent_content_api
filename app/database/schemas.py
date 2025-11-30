@@ -25,3 +25,9 @@ class ContentResponse(BaseModel):
     sentiment: Optional[str]
     class Config:
         orm_mode = True
+
+class ContentResponse(BaseModel):
+    id: int
+    text: str
+    class Config:
+        orm_mode = True

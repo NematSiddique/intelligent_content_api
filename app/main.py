@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.jwt_middleware import JWTMiddleware
-from app.routes import users, contents
+from app.routes import contents_router, users_router
 from app.database.database import Base, engine
 from app.logging_config import setup_logging
 
@@ -25,8 +25,8 @@ app.add_middleware(
 app.add_middleware(JWTMiddleware)
 
 # Routers
-app.include_router(users.router, prefix="/users", tags=["Users"])
-app.include_router(contents.router, prefix="/contents", tags=["Contents"])
+app.include_router(users_router.router, prefix="/users", tags=["Users"])
+app.include_router(contents_router.router, prefix="/contents", tags=["Contents"])
 
 @app.get("/")
 def root():

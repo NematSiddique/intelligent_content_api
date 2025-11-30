@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from app.database.database import SessionLocal, get_db
 from app.database.models import User
 from app.database.schemas import UserCreate, UserLogin, UserResponse
-from app.service.auth_service import create_token, hash_password, verify_password
+from app.service.user_service import create_token, hash_password, verify_password
 import logging
 logger = logging.getLogger(__name__)
 

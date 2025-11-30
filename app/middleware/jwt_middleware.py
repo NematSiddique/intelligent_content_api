@@ -2,8 +2,7 @@ from fastapi.responses import JSONResponse
 from fastapi import Request
 from jose import JWTError, ExpiredSignatureError
 from starlette.types import ASGIApp, Receive, Scope, Send
-
-from app.service.auth_service import decode_access_token
+from app.service.user_service import decode_access_token
 
 class JWTMiddleware:
   def __init__(self, app: ASGIApp):
