@@ -6,7 +6,7 @@ A RESTful API service that allows users to upload text content. The system autom
 
 ## Table of Contents
 
-**Features:**
+## **Features:**
 1. **User Authentication**
    - JWT-based authentication.
    - **POST /signup** – Register a new user.
@@ -24,7 +24,7 @@ A RESTful API service that allows users to upload text content. The system autom
    
 ---
 
-**Tech Stack:**
+## **Tech Stack:**
 
 - **Language:** Python 3.9+
 - **Framework:** FastAPI
@@ -49,7 +49,7 @@ A RESTful API service that allows users to upload text content. The system autom
 
 1. Clone the repository and navigate into the project directory:
    ```bash
-   git clone [https://github.com/NematSiddique/intelligent_content_api.git](https://github.com/NematSiddique/intelligent_content_api.git)
+   git clone https://github.com/NematSiddique/intelligent_content_api.git
    cd intelligent_content_api
    ```
 2. Create and activate a virtual environment:
@@ -130,8 +130,6 @@ A RESTful API service that allows users to upload text content. The system autom
 - `sentiment` – Positive/Negative/Neutral
 - `created_at` – Timestamp
 
----
-
 ## AI Integration
 
 * AI API calls are asynchronous using httpx.AsyncClient.
@@ -147,38 +145,40 @@ A RESTful API service that allows users to upload text content. The system autom
    
    ```
 
-### GCP Deployment Architecture (Theoretical)
-          +-------------------+
-          |   Cloud Load       |
-          |   Balancer/API     |
-          +---------+---------+
-                    |
-          +---------v---------+
-          |   Cloud Run        | -> Runs FastAPI container
-          +---------+---------+
-                    |
-          +---------v---------+
-          |   Cloud SQL        | -> PostgreSQL for users & content
-          +-------------------+
+---
+
+## GCP Deployment Architecture (Theoretical)
+    +-------------------+
+    |   Cloud Load       |
+    |   Balancer/API     |
+    +---------+---------+
+              |
+    +---------v---------+
+    |   Cloud Run        | -> Runs FastAPI container
+    +---------+---------+
+              |
+    +---------v---------+
+    |   Cloud SQL        | -> PostgreSQL for users & content
+    +-------------------+
 - API Gateway / Load Balancer: Route requests to Cloud Run
 - Cloud Run: Containerized FastAPI service
 - Cloud SQL: Managed PostgreSQL database
 - Secrets: Store API keys and JWT secrets in Secret Manager
 
-### Bonus Features
+## Bonus Features
 * Logging: Terminal logging for requests, errors, and AI responses.
 * Error Handling: Graceful handling if AI API fails or times out.
 * Regex Password Validation: Strong password enforcement on signup.
 * Unit Testing: Pytest-based tests for signup and content endpoints (if added).
 
-### How to Test
+## How to Test
 1. Use Swagger UI: http://127.0.0.1:8000/docs
 2. Or Postman:
-  - Include JWT token in Authorization header for protected endpoints:
-  - Bearer <your_token_here>
-  - Send JSON body where required.
+   - Include JWT token in Authorization header for protected endpoints:
+   - Bearer <your_token_here>
+   - Send JSON body where required.
 
-### Git Repo Structure
+## Git Repo Structure
 
 ```
 intelligent-content-api/
