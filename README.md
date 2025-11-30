@@ -105,12 +105,12 @@ A RESTful API service that allows users to upload text content. The system autom
 ## API Documentation
 | Method     | Endpoint          | Description                          | Body Example                                               |
 | ---------- | ----------------- | ------------------------------------ | ---------------------------------------------------------- |
-| **POST**   | /signup           | Register a new user                  | `{ "email": "user@example.com", "password": "Abcd@1234" }` |
-| **POST**   | /login            | Authenticate and return JWT token    | `{ "email": "user@example.com", "password": "Abcd@1234" }` |
+| **POST**   | users/signup      | Register a new user                  | `{ "email": "user@example.com", "password": "Abcd@1234" }` |
+| **POST**   | users/signin      | Authenticate and return JWT token    | `{ "email": "user@example.com", "password": "Abcd@1234" }` |
 | **POST**   | /contents         | Upload text, analyze, and save in DB | `{ "text": "Your text here" }`                             |
-| **GET**    | /contents         | Retrieve all content for the user    | N/A                                                        |
-| **GET**    | /contents/{id}    | Retrieve content by ID               | N/A                                                        |
-| **DELETE** | /contents/{id}    | Delete content by ID                 | N/A                                                        |
+| **GET**    | /contents         | Retrieve all content for the user    | `No body required`                                         |
+| **GET**    | /contents/{id}    | Retrieve content by ID               | `No body required`                                         |
+| **DELETE** | /contents/{id}    | Delete content by ID                 | `No body required`                                         |
 | **POST**   | /contents/analyze | Just analyze text without saving     | `{ "text": "Your text here" }`                             |
 
 ---
