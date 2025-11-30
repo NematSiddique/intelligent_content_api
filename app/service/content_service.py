@@ -40,7 +40,17 @@ async def create_user_content(content: ContentCreate, db: Session, current_user:
         new_content.summary = summary
         new_content.sentiment = sentiment
         db.commit()
-        redis_client.delete(f"user_contents:{current_user.id}")
+        cache_key = f"user_contents:{current_user.id}"
+        if redis_client:
+            try:
+                cached_data = redis_client.get(cache_key)
+                if cached_data:
+                    logger.debug("Deleting contents from Redis cache")
+                    # Convert JSON string back into list of dicts
+                    redis_client.delete(f"user_contents:{current_user.id}")
+            except Exception as e:
+                logger.error(f"Redis read error: {e}")
+        
         logger.info(f"Content updated with AI analysis: {new_content}")
         db.refresh(new_content)
 
@@ -117,7 +127,16 @@ def delete_user_content(content_id: int, db: Session, current_user: User)-> dict
           raise HTTPException(status_code=404, detail="Content not found")
       db.delete(content)
       db.commit()
-      redis_client.delete(f"user_contents:{current_user.id}")
+      cache_key = f"user_contents:{current_user.id}"
+      if redis_client:
+            try:
+                cached_data = redis_client.get(cache_key)
+                if cached_data:
+                    logger.debug("Deleting contents from Redis cache")
+                    # Convert JSON string back into list of dicts
+                    redis_client.delete(f"user_contents:{current_user.id}")
+            except Exception as e:
+                logger.error(f"Redis read error: {e}")
     except HTTPException:
       raise
     except Exception as e:
