@@ -1,3 +1,4 @@
+import json
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -5,12 +6,16 @@ from app.database.models import Content, User
 from app.database.schemas import ContentCreate, ContentListResponse, ContentResponse
 from fastapi.security import OAuth2PasswordBearer
 from app.service.analyze_sentiment import analyze_text  # async AI call
+from app.caching.redis import redis_client
+
 import logging
+from app.config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
-
+CACHE_KEY = "contents_cache"
+CACHE_TTL = settings.REDIS_CACHE_TTL  # default = 60 seconds
 
 async def create_user_content(content: ContentCreate, db: Session, current_user: User)-> ContentResponse:
     logger.info(f"Creating content for user: {current_user.email}")
@@ -35,6 +40,7 @@ async def create_user_content(content: ContentCreate, db: Session, current_user:
         new_content.summary = summary
         new_content.sentiment = sentiment
         db.commit()
+        redis_client.delete(f"user_contents:{current_user.id}")
         logger.info(f"Content updated with AI analysis: {new_content}")
         db.refresh(new_content)
 
@@ -48,16 +54,42 @@ async def create_user_content(content: ContentCreate, db: Session, current_user:
 
 def get_all_user_contents(db: Session, current_user: User) -> List[ContentListResponse]:
     logger.info(f"Fetching all contents for user: {current_user.email}")
+    cache_key = f"user_contents:{current_user.id}"
+    # Try cache first
+    if redis_client:
+        try:
+            cached_data = redis_client.get(cache_key)
+            if cached_data:
+                logger.debug("Serving contents from Redis cache")
+                # Convert JSON string back into list of dicts
+                return json.loads(cached_data)
+        except Exception as e:
+            logger.error(f"Redis read error: {e}")
+
+    # Fallback to DB
     try:
-      results = (
-      db.query(Content.id, Content.text)
-      .filter(Content.user_id == current_user.id)
-      .all()
-      )
+        results = (
+            db.query(Content.id, Content.text)
+            .filter(Content.user_id == current_user.id)
+            .all()
+        )
+        response = [{"id": r[0], "text": r[1]} for r in results]
     except Exception as e:
-      logger.error(f"Error fetching user contents for user: {current_user.email}: {e}")
-      raise HTTPException(status_code=500, detail=f"Error fetching contents for user: {current_user.email}")
-    logger.debug(f"Fetched contents: {results}")
+        logger.error(f"Error fetching user contents for user: {current_user.email}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching contents for user: {current_user.email}",
+        )
+
+    logger.debug(f"Fetched contents from DB: {results}")
+
+    # Cache it
+    if redis_client:
+        try:
+            logger.debug("Caching contents in Redis")
+            redis_client.setex(cache_key, CACHE_TTL, json.dumps(response))
+        except Exception as e:
+            logger.error(f"Redis write error: {e}")
     return results
 
 def get_user_content(content_id: int, db: Session, current_user: User)-> ContentResponse:
@@ -85,6 +117,7 @@ def delete_user_content(content_id: int, db: Session, current_user: User)-> dict
           raise HTTPException(status_code=404, detail="Content not found")
       db.delete(content)
       db.commit()
+      redis_client.delete(f"user_contents:{current_user.id}")
     except HTTPException:
       raise
     except Exception as e:

@@ -30,7 +30,6 @@ def verify_password(plain, hashed):
 def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGO])
-        print("JWT secret at decode:", settings.JWT_SECRET)
         return payload
     except ExpiredSignatureError as e:
         # Re-raise the specific exception you want to catch in the middleware
@@ -45,7 +44,6 @@ def create_token(data: dict):
     payload["exp"] = expire
     payload["iat"] = datetime.utcnow()
     payload["nbf"] = datetime.utcnow()
-    print("JWT secret at encode:", settings.JWT_SECRET)
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGO)
 
 def get_current_user(request: Request) -> User:

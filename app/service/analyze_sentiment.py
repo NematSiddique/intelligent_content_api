@@ -9,14 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = settings.GEMINI_API_KEY
-try:
-    # Set the timeout in milliseconds in the HttpOptions configuration
-    http_options = types.HttpOptions(timeout=10.0) # Timeout in seconds
-    client = genai.Client(api_key=GEMINI_API_KEY,http_options=http_options)
-except Exception as e:
-    logger.error(f"Could not initialize the genai client with HttpOptions: {e}")
-    # Fallback to a default client if HttpOptions fails (though it shouldn't if libs are correct)
-    client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 async def analyze_text(text: str):
     """

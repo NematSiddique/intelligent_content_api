@@ -1,15 +1,17 @@
 services:
 
   postgres-intelligent:
-    image: postgres
+    image: postgres:18
     ports:
       - "5432:5432"
     environment:
-        POSTGRES_PASSWORD: admin
-        POSTGRES_USER: admin
-        POSTGRES_DB: boot
-
-
+      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: admin
+      POSTGRES_DB: boot
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - contentdb_network
 
   adminer:
     image: adminer
@@ -17,6 +19,18 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    networks:
+      - contentdb_network
+
+  redis:
+    image: redis:7
+    container_name: intelligent_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:
       - contentdb_network
 
